@@ -1,0 +1,21 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MinecraftServerManager.App"
+             xmlns:local="using:MinecraftServerManager"
+             xmlns:conv="using:MinecraftServerManager.Converters"
+             RequestedThemeVariant="Default">
+
+    <Application.Resources>
+        <conv:EnumEqualsConverter x:Key="EnumEq" />
+        <conv:InverseBoolConverter x:Key="InverseBool" />
+    </Application.Resources>
+
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+  
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://MinecraftServerManager/Assets/AppStyles.axaml" />
+    </Application.Styles>
+</Application>

@@ -1,0 +1,687 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MinecraftServerManager.ViewModels"
+        xmlns:m="using:MinecraftServerManager.Models"
+        xmlns:conv="using:MinecraftServerManager.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        d:DesignWidth="1100"
+        d:DesignHeight="700"
+        x:Class="MinecraftServerManager.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        x:Name="RootWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Minecraft Server Manager"
+        MinWidth="980"
+        MinHeight="620">
+
+    <Window.Resources>
+        <conv:EnumEqualsConverter x:Key="EnumEq" />
+        <conv:InverseBoolConverter x:Key="InverseBool" />
+        <conv:StringNotEmptyConverter x:Key="StringNotEmpty" />
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                Padding="14,12"
+                Background="{DynamicResource SystemChromeMediumLowColor}">
+            <StackPanel Spacing="10">
+                <TextBlock Classes="app-subtitle"
+                           Text="Paper und Velocity lokal verwalten — Prozesse, Dateien und Cluster ohne Kommandozeile." />
+
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="app-nav"
+                                Content="Dashboard"
+                                ToolTip.Tip="Zur Übersicht aller Server-Instanzen."
+                                Command="{Binding SelectDashboardCommand}" />
+                        <Button Classes="app-nav"
+                                Content="Einstellungen"
+                                ToolTip.Tip="Globale Pfade, Java, JVM-Standards und Darstellung."
+                                Command="{Binding OpenSettingsCommand}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2"
+                                Orientation="Horizontal"
+                                Spacing="14"
+                                HorizontalAlignment="Right">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Classes="app-action"
+                                    Content="Quick-Setup"
+                                    ToolTip.Tip="Neuen Paper-Server mit Download und server.properties anlegen."
+                                    Command="{Binding OpenQuickSetupCommand}" />
+                            <Button Classes="app-action"
+                                    Content="Cluster-Wizard"
+                                    ToolTip.Tip="Velocity-Proxy und zwei Paper-Backends mit gemeinsamem Forwarding einrichten."
+                                    Command="{Binding OpenClusterWizardCommand}" />
+                        </StackPanel>
+                        <Button Classes="app-danger"
+                                Content="Alle stoppen"
+                                ToolTip.Tip="Stoppt alle laufenden Server-Prozesse."
+                                Command="{Binding StopAllCommand}" />
+                    </StackPanel>
+                </Grid>
+
+                <Border Classes="app-status-strip">
+                    <TextBlock Classes="app-status-text"
+                               VerticalAlignment="Center"
+                               Text="{Binding StatusMessage}" />
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom"
+                Padding="10,8"
+                Background="{DynamicResource SystemChromeLowColor}">
+            <TextBlock Classes="app-hint"
+                       FontSize="11"
+                       Text="Proxy und Backends: Velocity/Paper mit Forwarding — öffentlichen Port nur am Proxy freigeben." />
+        </Border>
+
+        <Grid ColumnDefinitions="280,*">
+            <Border Grid.Column="0"
+                    Padding="12"
+                    Background="{DynamicResource SystemChromeLowColor}">
+                <DockPanel LastChildFill="True">
+                    <TextBlock DockPanel.Dock="Top"
+                               Margin="0,0,0,10"
+                               Classes="app-section-label"
+                               Text="Server" />
+
+                    <Panel>
+                        <TextBlock Margin="0,4,0,0"
+                                   Classes="app-hint"
+                                   FontSize="11"
+                                   IsVisible="{Binding HasInstances, Converter={StaticResource InverseBool}}"
+                                   Text="Noch leer — hier erscheinen Instanzen und Cluster." />
+
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                      IsVisible="{Binding HasInstances}">
+                            <ItemsControl ItemsSource="{Binding SidebarRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:SidebarRow">
+                                        <StackPanel Margin="0,6,0,0">
+                                            <TextBlock FontWeight="SemiBold"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                       IsVisible="{Binding IsHeader}"
+                                                       Text="{Binding Header}" />
+                                            <Button HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Left"
+                                                    Classes="app-nav"
+                                                    ToolTip.Tip="Details, Konsole und Konfiguration dieser Instanz öffnen."
+                                                    IsVisible="{Binding IsHeader, Converter={StaticResource InverseBool}}"
+                                                    Content="{Binding Instance.Name}"
+                                                    Command="{Binding DataContext.SelectServerCommand, ElementName=RootWindow}"
+                                                    CommandParameter="{Binding Instance}">
+                                                <Button.ContextFlyout>
+                                                    <MenuFlyout>
+                                                        <MenuItem Header="Im Explorer öffnen"
+                                                                  Command="{Binding DataContext.OpenExplorerForInstanceCommand, ElementName=RootWindow}"
+                                                                  CommandParameter="{Binding Instance}" />
+                                                        <MenuItem Header="Konsole"
+                                                                  Command="{Binding DataContext.OpenConsoleForInstanceCommand, ElementName=RootWindow}"
+                                                                  CommandParameter="{Binding Instance}" />
+                                                        <MenuItem Header="Server löschen…"
+                                                                  Command="{Binding DataContext.DeleteServerCommand, ElementName=RootWindow}"
+                                                                  CommandParameter="{Binding Instance}" />
+                                                    </MenuFlyout>
+                                                </Button.ContextFlyout>
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Panel>
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Column="1">
+                <Border Padding="16"
+                        IsVisible="{Binding CurrentPane, Converter={StaticResource EnumEq}, ConverterParameter={x:Static vm:MainPane.Dashboard}}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="app-page-title" Text="Übersicht" />
+                        <TextBlock Classes="app-hint"
+                                   IsVisible="{Binding HasInstances}"
+                                   Text="Weitere Instanzen jederzeit über Quick-Setup oder den Cluster-Wizard hinzufügen." />
+
+                        <Border IsVisible="{Binding HasInstances, Converter={StaticResource InverseBool}}"
+                                Classes="app-card-elevated"
+                                HorizontalAlignment="Stretch">
+                            <StackPanel Spacing="14">
+                                <TextBlock Text="Keine Server vorhanden"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Classes="app-hint"
+                                           Text="Legen Sie einen Paper-Server an oder richten Sie einen Velocity-Cluster mit mehreren Welten ein." />
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Button Classes="app-action"
+                                            Content="Quick-Setup"
+                                            Padding="16,10"
+                                            ToolTip.Tip="Einen neuen Paper-Server herunterladen und anlegen."
+                                            Command="{Binding OpenQuickSetupCommand}" />
+                                    <Button Classes="app-nav"
+                                            Content="Cluster-Wizard"
+                                            Padding="16,10"
+                                            ToolTip.Tip="Velocity-Proxy und zwei Paper-Server mit Forwarding erstellen."
+                                            Command="{Binding OpenClusterWizardCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border IsVisible="{Binding HasInstances}"
+                                Classes="app-card"
+                                HorizontalAlignment="Stretch">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Instanzen"
+                                           Classes="app-section-label"
+                                           Margin="0,0,0,4" />
+                                <ScrollViewer MaxHeight="400">
+                                    <ItemsControl ItemsSource="{Binding Instances}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="m:ServerInstance">
+                                                <Border Classes="app-list-row">
+                                                    <Grid ColumnDefinitions="2*,120,80,120,*">
+                                                        <TextBlock Grid.Column="0"
+                                                                   VerticalAlignment="Center"
+                                                                   Text="{Binding Name}" />
+                                                        <TextBlock Grid.Column="1"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                                   Text="{Binding Loader}" />
+                                                        <TextBlock Grid.Column="2"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                                   Text="{Binding ServerPort}" />
+                                                        <TextBlock Grid.Column="3"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                                   Text="{Binding MinecraftVersion}" />
+                                                        <TextBlock Grid.Column="4"
+                                                                   VerticalAlignment="Center"
+                                                                   HorizontalAlignment="Right"
+                                                                   Text="{Binding RuntimeStatus}" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <ScrollViewer Padding="16"
+                              IsVisible="{Binding CurrentPane, Converter={StaticResource EnumEq}, ConverterParameter={x:Static vm:MainPane.Settings}}">
+                    <StackPanel Spacing="14"
+                                MaxWidth="720"
+                                HorizontalAlignment="Left">
+                        <TextBlock Classes="app-page-title" Text="Globale Einstellungen" />
+                        <TextBlock Classes="app-hint"
+                                   Text="Diese Werte gelten als Standard für neue Server und Java-Auflösung." />
+
+                        <Border Classes="app-card">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Java"
+                                           Classes="app-section-label"
+                                           ToolTip.Tip="Vollständiger Pfad zu java.exe oder javaw.exe. Leer lassen, um die JAVA_HOME-Umgebung bzw. den PATH-Eintrag zu verwenden." />
+                                <TextBox PlaceholderText="Pfad zu java.exe (leer = PATH)"
+                                         ToolTip.Tip="Optional: expliziter Pfad zur JVM. Hilfreich bei mehreren installierten Java-Versionen."
+                                         Text="{Binding PreferredJavaPath}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="app-card">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Pfade"
+                                           Classes="app-section-label"
+                                           ToolTip.Tip="Speicherorte für heruntergeladene Artefakte und für alle Server-Instanz-Ordner." />
+                                <TextBlock Text="Artefakt-Cache"
+                                           ToolTip.Tip="Hier werden z. B. heruntergeladene Paper-JARs zwischengespeichert, um erneute Downloads zu vermeiden." />
+                                <TextBox Text="{Binding ArtifactCacheDirectory}"
+                                         ToolTip.Tip="Verzeichnis für zwischengespeicherte Server-JARs und Builds." />
+                                <TextBlock Text="Server-Stammverzeichnis"
+                                           ToolTip.Tip="Alle neuen Server werden als Unterordner unter diesem Pfad angelegt." />
+                                <TextBox Text="{Binding ServersRootDirectory}"
+                                         ToolTip.Tip="Basisordner für Paper-, Velocity- und Cluster-Instanzen." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="app-card">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="JVM"
+                                           Classes="app-section-label"
+                                           ToolTip.Tip="Standard-Argumente für den Java-Prozess, wenn eine Instanz keine eigenen JVM-Optionen setzt." />
+                                <TextBlock Text="Standard-JVM-Argumente"
+                                           ToolTip.Tip="Typisch: RAM (-Xms/-Xmx), Garbage Collector, Aikar-Flags. Gilt als Vorgabe für neue Server." />
+                                <TextBox AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         MinHeight="64"
+                                         Text="{Binding DefaultJvmArguments}"
+                                         ToolTip.Tip="JVM-Parameter, die beim Start von Minecraft-Serverprozessen verwendet werden, sofern nicht pro Instanz überschrieben." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="app-card">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Darstellung"
+                                           Classes="app-section-label"
+                                           ToolTip.Tip="Helles oder dunkles Fluent-Theme für die gesamte Anwendung." />
+                                <CheckBox Content="Dunkelmodus"
+                                          IsChecked="{Binding UseDarkTheme}"
+                                          ToolTip.Tip="Schaltet zwischen hellem und dunklem Erscheinungsbild. Nach „Speichern“ wird das Theme angewendet und in den Einstellungen gesichert." />
+                                <Button HorizontalAlignment="Left"
+                                        Content="Speichern"
+                                        ToolTip.Tip="Globale Einstellungen in die Konfigurationsdatei schreiben und Theme übernehmen."
+                                        Command="{Binding SaveAppSettingsCommand}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Grid IsVisible="{Binding CurrentPane, Converter={StaticResource EnumEq}, ConverterParameter={x:Static vm:MainPane.ServerDetail}}">
+                    <Grid Margin="16">
+                        <Grid RowDefinitions="Auto,*">
+                            <Border Padding="0,0,0,12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel>
+                                        <TextBlock FontSize="20"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding SelectedInstance.Name}" />
+                                        <TextBlock Classes="app-hint"
+                                                   Text="{Binding SelectedInstance.DirectoryPath}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1"
+                                                Orientation="Horizontal"
+                                                Spacing="8"
+                                                VerticalAlignment="Top">
+                                        <Button Content="Start"
+                                                ToolTip.Tip="Serverprozess dieser Instanz starten."
+                                                Command="{Binding StartServerCommand}" />
+                                        <Button Content="Stopp"
+                                                ToolTip.Tip="Server sauber beenden (SIGTERM / stop)."
+                                                Command="{Binding StopServerCommand}" />
+                                        <Button Content="Ordner"
+                                                ToolTip.Tip="Instanzordner im Explorer öffnen."
+                                                Command="{Binding OpenExplorerCommand}" />
+                                        <Button Classes="app-danger"
+                                                Content="Server entfernen…"
+                                                ToolTip.Tip="Instanz aus der Verwaltung entfernen (Dateien auf der Festplatte bleiben)."
+                                                Command="{Binding DeleteServerCommand}"
+                                                CommandParameter="{Binding SelectedInstance}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <TabControl Grid.Row="1" SelectedIndex="{Binding DetailTabIndex}">
+                                <TabItem ToolTip.Tip="Status, Hinweise und Kurzinfos zur ausgewählten Instanz.">
+                                    <TabItem.Header>
+                                        <TextBlock Text="Übersicht" />
+                                    </TabItem.Header>
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="{Binding SelectedInstance.RuntimeStatus, StringFormat='Status: {0}'}" />
+                                        <TextBlock Text="{Binding SelectedInstance.LastError}"
+                                                   Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}"
+                                                   TextWrapping="Wrap" />
+                                        <Border Classes="app-card"
+                                                HorizontalAlignment="Stretch">
+                                            <StackPanel Spacing="6">
+                                                <TextBlock FontWeight="SemiBold"
+                                                           Text="Auf einen Blick" />
+                                                <TextBlock Text="{Binding SelectedInstance.Loader, StringFormat='Loader: {0}'}" />
+                                                <TextBlock Text="{Binding SelectedInstance.MinecraftVersion, StringFormat='Minecraft: {0}'}" />
+                                                <TextBlock Text="{Binding SelectedInstance.ServerPort, StringFormat='Port (Instanz): {0}'}" />
+                                                <TextBlock Text="{Binding NetworkBindSummary}"
+                                                           Classes="app-hint"
+                                                           FontSize="11"
+                                                           TextWrapping="Wrap" />
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               Text="{Binding QuickConnectionText, StringFormat='Verbindung (lokal): {0}'}" />
+                                                    <Button Content="Adresse kopieren"
+                                                            Padding="8,4"
+                                                            Classes="app-nav"
+                                                            ToolTip.Tip="Kopiert 127.0.0.1:Port — nur auf diesem PC gültig; für andere Rechner LAN-/öffentliche IP nutzen (siehe Hinweis unten, wenn sichtbar)."
+                                                            Command="{Binding CopyQuickConnectionCommand}" />
+                                                </StackPanel>
+                                                <TextBlock Margin="0,4,0,0"
+                                                           Classes="app-hint"
+                                                           FontSize="11"
+                                                           TextWrapping="Wrap"
+                                                           Text="{Binding QuickConnectionHint}"
+                                                           IsVisible="{Binding QuickConnectionHint, Converter={StaticResource StringNotEmpty}}" />
+                                                <TextBlock Text="{Binding OverviewClusterLine}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Separator />
+                                        <TextBlock TextWrapping="Wrap"
+                                                   Classes="app-hint"
+                                                   Text="Paper mit Velocity: Backends mit Forwarding; Proxy nimmt Verbindungen von Spielern entgegen." />
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem ToolTip.Tip="Live-Ausgabe des Servers und Befehle an die Konsole senden.">
+                                    <TabItem.Header>
+                                        <TextBlock Text="Konsole" />
+                                    </TabItem.Header>
+                                    <Grid RowDefinitions="Auto,*,Auto,Auto">
+                                        <WrapPanel Orientation="Horizontal">
+                                            <ItemsControl ItemsSource="{Binding PresetCommands}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel Orientation="Horizontal" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="vm:PresetEntry">
+                                                        <Button Margin="0,0,6,6"
+                                                                Content="{Binding Label}"
+                                                                Command="{Binding DataContext.ApplyPresetCommand, ElementName=RootWindow}"
+                                                                CommandParameter="{Binding}">
+                                                            <ToolTip.Tip>
+                                                                <StackPanel MaxWidth="440">
+                                                                    <TextBlock FontWeight="SemiBold"
+                                                                               Text="{Binding Label}" />
+                                                                    <TextBlock Margin="0,4,0,0"
+                                                                               FontFamily="Consolas"
+                                                                               FontSize="11"
+                                                                               TextWrapping="Wrap"
+                                                                               Text="{Binding Command}" />
+                                                                    <TextBlock Margin="0,6,0,0"
+                                                                               FontSize="11"
+                                                                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                                               TextWrapping="Wrap"
+                                                                               Text="Klick ersetzt die Eingabezeile durch diese Vorlage." />
+                                                                </StackPanel>
+                                                            </ToolTip.Tip>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </WrapPanel>
+                                        <ListBox Grid.Row="1"
+                                                 ItemsSource="{Binding CurrentConsole}"
+                                                 FontFamily="Consolas"
+                                                 FontSize="12"
+                                                 Background="{DynamicResource SystemChromeLowColor}" />
+                                        <TextBox Grid.Row="2"
+                                                 PlaceholderText="Befehl eingeben…"
+                                                 Text="{Binding ConsoleInput}"
+                                                 ToolTip.Tip="Minecraft-Serverbefehl ohne führenden Schrägstrich; wird an den laufenden Prozess gesendet." />
+                                        <StackPanel Grid.Row="3"
+                                                    Orientation="Horizontal"
+                                                    Spacing="8">
+                                            <Button HorizontalAlignment="Left"
+                                                    Content="Senden"
+                                                    ToolTip.Tip="Eingegebenen Befehl an die Serverkonsole senden."
+                                                    Command="{Binding SendConsoleCommand}" />
+                                            <Button Content="Konsole leeren"
+                                                    Classes="app-nav"
+                                                    ToolTip.Tip="Alle angezeigten Zeilen dieser Instanz aus der Ansicht entfernen (Protokoll auf der Festplatte bleibt unverändert)."
+                                                    Command="{Binding ClearConsoleCommand}" />
+                                            <Button Content="Letzte Zeile kopieren"
+                                                    Classes="app-nav"
+                                                    ToolTip.Tip="Die letzte Konsolenzeile in die Zwischenablage kopieren."
+                                                    Command="{Binding CopyLastConsoleLineCommand}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </TabItem>
+                                <TabItem ToolTip.Tip="server.properties bearbeiten und speichern.">
+                                    <TabItem.Header>
+                                        <TextBlock Text="Konfiguration" />
+                                    </TabItem.Header>
+                                    <DockPanel>
+                                        <StackPanel DockPanel.Dock="Bottom"
+                                                    Margin="0,8,0,0"
+                                                    Spacing="8">
+                                            <TextBlock Classes="app-hint"
+                                                       FontSize="11"
+                                                       TextWrapping="Wrap"
+                                                       Text="Nach „Speichern“ wird die Datei geschrieben; manche Werte (Port, Online-Modus) wirken erst nach einem Neustart des Servers." />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Button HorizontalAlignment="Left"
+                                                        Content="server.properties speichern"
+                                                        ToolTip.Tip="Änderungen in die Datei server.properties im Instanzordner schreiben."
+                                                        Command="{Binding SaveServerPropertiesCommand}" />
+                                                <Button Content="Im Editor öffnen"
+                                                        Classes="app-nav"
+                                                        ToolTip.Tip="Öffnet server.properties mit dem Standardprogramm des Systems (z. B. Editor / VS Code). Änderungen dort ggf. hier neu laden oder erneut speichern."
+                                                        Command="{Binding OpenServerPropertiesExternalCommand}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <TextBox AcceptsReturn="True"
+                                                 TextWrapping="Wrap"
+                                                 FontFamily="Consolas"
+                                                 Text="{Binding ServerPropertiesText}"
+                                                 ToolTip.Tip="Rohtext von server.properties. Nach dem Speichern wirkt die Konfiguration beim nächsten Start bzw. für unterstützte Live-Optionen." />
+                                    </DockPanel>
+                                </TabItem>
+                                <TabItem ToolTip.Tip="Ports und Hinweise zum Netzwerk / Cluster.">
+                                    <TabItem.Header>
+                                        <TextBlock Text="Netzwerk" />
+                                    </TabItem.Header>
+                                    <StackPanel Spacing="8">
+                                        <TextBlock TextWrapping="Wrap"
+                                                   Classes="app-hint"
+                                                   Text="Port dieser Instanz ist in server.properties hinterlegt. Für Cluster nur den Proxy nach außen öffnen; Backends typischerweise localhost." />
+                                        <Border Classes="app-card" HorizontalAlignment="Stretch">
+                                            <StackPanel Spacing="6">
+                                                <TextBlock FontWeight="SemiBold" Text="Bind &amp; Port" />
+                                                <TextBlock Text="{Binding NetworkBindSummary}"
+                                                           TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding SelectedInstance.ServerPort, StringFormat='game-port (Instanz / server-port): {0}'}" />
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               Text="{Binding QuickConnectionText, StringFormat='Lokal testen: {0}'}" />
+                                                    <Button Content="Kopieren"
+                                                            Padding="8,4"
+                                                            Classes="app-nav"
+                                                            ToolTip.Tip="Kopiert 127.0.0.1:Port — nur auf diesem PC; für andere Spieler LAN-/öffentliche IP und diesen Port (siehe Hinweis, wenn sichtbar)."
+                                                            Command="{Binding CopyQuickConnectionCommand}" />
+                                                </StackPanel>
+                                                <TextBlock Margin="0,8,0,0"
+                                                           Classes="app-hint"
+                                                           FontSize="11"
+                                                           TextWrapping="Wrap"
+                                                           Text="{Binding QuickConnectionHint}"
+                                                           IsVisible="{Binding QuickConnectionHint, Converter={StaticResource StringNotEmpty}}" />
+                                            </StackPanel>
+                                        </Border>
+                                        <TextBlock Margin="0,16,0,0"
+                                                   FontSize="11"
+                                                   Classes="app-hint"
+                                                   TextWrapping="Wrap"
+                                                   Text="Dieser Tab fasst Netzwerkbezogene Kurzinfos zusammen. Detaillierte Ports und IPs stehen in server.properties (Tab Konfiguration) und in den Velocity-/Paper-Dateien des Clusters." />
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem ToolTip.Tip="Plugins- und Mods-Ordner öffnen oder anlegen; Hinweise je nach Loader.">
+                                    <TabItem.Header>
+                                        <TextBlock Text="Erweiterungen" />
+                                    </TabItem.Header>
+                                    <ScrollViewer>
+                                        <StackPanel Spacing="10">
+                                            <TextBlock FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}"
+                                                       TextWrapping="Wrap"
+                                                       Text="{Binding LoaderMismatchHint}" />
+                                            <TextBlock TextWrapping="Wrap"
+                                                       Classes="app-hint"
+                                                       Text="{Binding ExtensionsGuidance}" />
+                                            <Separator />
+                                            <TextBlock FontWeight="SemiBold"
+                                                       Text="plugins/" />
+                                            <TextBox IsReadOnly="True"
+                                                     Text="{Binding PluginsFolderPath}"
+                                                     ToolTip.Tip="Absoluter Pfad zum plugins-Ordner dieser Instanz." />
+                                            <TextBlock FontSize="11"
+                                                       Classes="app-hint"
+                                                       Text="{Binding PluginsFolderCountLabel}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Button Content="plugins öffnen (Explorer)"
+                                                        ToolTip.Tip="Ordner plugins im Windows-Explorer anzeigen."
+                                                        Command="{Binding OpenPluginsFolderCommand}" />
+                                                <Button Content="plugins anlegen"
+                                                        ToolTip.Tip="Den Ordner plugins anlegen, falls er noch nicht existiert."
+                                                        Command="{Binding EnsurePluginsFolderCommand}" />
+                                            </StackPanel>
+                                            <TextBlock FontWeight="SemiBold" Text="mods/" />
+                                            <TextBox IsReadOnly="True"
+                                                     Text="{Binding ModsFolderPath}"
+                                                     ToolTip.Tip="Absoluter Pfad zum mods-Ordner dieser Instanz." />
+                                            <TextBlock FontSize="11"
+                                                       Classes="app-hint"
+                                                       Text="{Binding ModsFolderCountLabel}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Button Content="mods öffnen (Explorer)"
+                                                        ToolTip.Tip="Ordner mods im Windows-Explorer anzeigen."
+                                                        Command="{Binding OpenModsFolderCommand}" />
+                                                <Button Content="mods anlegen"
+                                                        ToolTip.Tip="Den Ordner mods anlegen, falls er noch nicht existiert."
+                                                        Command="{Binding EnsureModsFolderCommand}" />
+                                            </StackPanel>
+                                            <TextBlock FontSize="11"
+                                                       Classes="app-hint"
+                                                       TextWrapping="Wrap"
+                                                       Text="Paper/Purpur: Bukkit-API-Plugins in plugins/. Fabric/Forge/Quilt: Mod-JARs in mods/. Velocity: nur Proxy-Plugins am Proxy; Spiel-Plugins auf den Backends." />
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+                                <TabItem ToolTip.Tip="Velocity-Toml und Cluster-Zuordnung dieser Instanz (nur lesen).">
+                                    <TabItem.Header>
+                                        <TextBlock Text="Cluster" />
+                                    </TabItem.Header>
+                                    <StackPanel Spacing="10">
+                                        <StackPanel Spacing="8"
+                                                    IsVisible="{Binding IsClusterMember}">
+                                            <TextBox AcceptsReturn="True"
+                                                     TextWrapping="Wrap"
+                                                     MinHeight="120"
+                                                     IsReadOnly="True"
+                                                     Text="{Binding ClusterSummary}"
+                                                     ToolTip.Tip="Kurzüberblick über Cluster-Mitgliedschaft und verbundene Instanzen." />
+                                        </StackPanel>
+                                        <StackPanel Spacing="10"
+                                                    IsVisible="{Binding IsClusterMember, Converter={StaticResource InverseBool}}">
+                                            <TextBlock TextWrapping="Wrap"
+                                                       Classes="app-hint"
+                                                       Text="Diese Instanz gehört zu keinem Velocity-Cluster. Einrichtung mehrerer Welten mit gemeinsamem Proxy:" />
+                                            <Button HorizontalAlignment="Left"
+                                                    Classes="app-action"
+                                                    Content="Cluster-Wizard öffnen"
+                                                    ToolTip.Tip="Velocity-Proxy und Paper-Backends mit Forwarding anlegen."
+                                                    Command="{Binding OpenClusterWizardCommand}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem ToolTip.Tip="Optionale Skripte vor Start und nach Stopp; Umgebungsvariablen MSM_* sind gesetzt.">
+                                    <TabItem.Header>
+                                        <TextBlock Text="Automation" />
+                                    </TabItem.Header>
+                                    <StackPanel Spacing="8">
+                                        <TextBlock TextWrapping="Wrap"
+                                                   Classes="app-hint"
+                                                   Text="Skripte erhalten Umgebungsvariablen MSM_INSTANCE_DIR, MSM_INSTANCE_ID, MSM_INSTANCE_NAME, MSM_PORT, MSM_LOADER, MSM_MC_VERSION." />
+                                        <TextBox PlaceholderText="Pfad zu .ps1 oder .cmd vor Start"
+                                                 Text="{Binding AutomationBeforePath}"
+                                                 ToolTip.Tip="Vor Start: MSM_* gesetzt. Exitcode ≠ 0 bricht den Serverstart ab." />
+                                        <TextBox PlaceholderText="Pfad zu .ps1 oder .cmd nach Stopp"
+                                                 Text="{Binding AutomationAfterPath}"
+                                                 ToolTip.Tip="Nach Stopp: MSM_* gesetzt. Nützlich für Aufräumen oder Folge-Jobs." />
+                                        <Expander Header="Beispiel .ps1 anzeigen">
+                                            <TextBox Margin="0,8,0,0"
+                                                     MinHeight="140"
+                                                     AcceptsReturn="True"
+                                                     TextWrapping="Wrap"
+                                                     FontFamily="Consolas"
+                                                     FontSize="11"
+                                                     IsReadOnly="True"
+                                                     Text="{Binding AutomationExampleScript}"
+                                                     ToolTip.Tip="Nur Referenz — nicht ausgeführt." />
+                                        </Expander>
+                                        <TextBlock Margin="0,16,0,0"
+                                                   FontSize="11"
+                                                   Classes="app-hint"
+                                                   TextWrapping="Wrap"
+                                                   Text="Automation: Hier binden Sie eigene Vorher-/Nachher-Skripte an den Lebenszyklus des Prozesses — z. B. Backups vor dem Start oder Aufräumen nach dem Stopp." />
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem ToolTip.Tip="Letzte Zeilen von logs/latest.log zur Fehlersuche.">
+                                    <TabItem.Header>
+                                        <TextBlock Text="Diagnose" />
+                                    </TabItem.Header>
+                                    <DockPanel LastChildFill="True">
+                                        <StackPanel DockPanel.Dock="Bottom"
+                                                    Margin="0,10,0,0">
+                                            <TextBlock FontSize="11"
+                                                       Classes="app-hint"
+                                                       TextWrapping="Wrap"
+                                                       Text="Diagnose: Zeigt den unteren Ausschnitt von logs/latest.log — ideal, um Startfehler, Plugin-Probleme oder Abstürze ohne externen Editor zu erkennen." />
+                                        </StackPanel>
+                                        <DockPanel>
+                                            <StackPanel DockPanel.Dock="Top"
+                                                        Orientation="Horizontal"
+                                                        Spacing="8"
+                                                        Margin="0,0,0,8">
+                                                <Button HorizontalAlignment="Left"
+                                                        Content="Aktualisieren"
+                                                        ToolTip.Tip="Logauszug neu von der Festplatte einlesen."
+                                                        Command="{Binding RefreshDiagnoseCommand}" />
+                                                <Button Content="Log-Ordner öffnen"
+                                                        Classes="app-nav"
+                                                        ToolTip.Tip="Öffnet den Ordner logs dieser Instanz im Explorer (latest.log u. a.)."
+                                                        Command="{Binding OpenLogsFolderCommand}" />
+                                            </StackPanel>
+                                            <TextBox AcceptsReturn="True"
+                                                     TextWrapping="Wrap"
+                                                     FontFamily="Consolas"
+                                                     FontSize="11"
+                                                     Text="{Binding DiagnoseTail}"
+                                                     ToolTip.Tip="Die letzten Zeilen der Datei logs/latest.log im Instanzordner." />
+                                        </DockPanel>
+                                    </DockPanel>
+                                </TabItem>
+                                <TabItem ToolTip.Tip="RCON-Befehl senden, wenn in server.properties aktiviert.">
+                                    <TabItem.Header>
+                                        <TextBlock Text="RCON" />
+                                    </TabItem.Header>
+                                    <StackPanel Spacing="8">
+                                        <TextBlock TextWrapping="Wrap"
+                                                   Classes="app-hint"
+                                                   Text="RCON in server.properties aktivieren (enable-rcon). Optional für Automation ohne Konsole." />
+                                        <TextBox PlaceholderText="RCON-Befehl"
+                                                 Text="{Binding RconInput}"
+                                                 ToolTip.Tip="Befehl wie in der Konsole; Passwort und Port kommen aus der Instanzkonfiguration." />
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button HorizontalAlignment="Left"
+                                                    Content="RCON senden"
+                                                    ToolTip.Tip="Befehl per RCON an den Server senden (localhost, Port aus server.properties / Instanz)."
+                                                    Command="{Binding SendRconCommand}" />
+                                            <Button Content="RCON testen"
+                                                    Classes="app-nav"
+                                                    ToolTip.Tip="Sendet den sicheren Befehl „list“ per RCON und zeigt die Antwort unten."
+                                                    Command="{Binding TestRconCommand}" />
+                                        </StackPanel>
+                                        <TextBlock Margin="0,8,0,0"
+                                                   FontFamily="Consolas"
+                                                   FontSize="11"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                   Text="{Binding RconTestResult}" />
+                                        <TextBlock Margin="0,16,0,0"
+                                                   FontSize="11"
+                                                   Classes="app-hint"
+                                                   TextWrapping="Wrap"
+                                                   Text="RCON: Sendet einzelne Befehle über das Remote-Konsolenprotokoll — praktisch, wenn die eingebettete Konsole nicht genutzt wird oder Skripte von außen steuern sollen." />
+                                    </StackPanel>
+                                </TabItem>
+                            </TabControl>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>

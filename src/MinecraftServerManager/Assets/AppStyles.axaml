@@ -1,0 +1,85 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Section / card surfaces -->
+    <Style Selector="Border.app-card">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="14,12" />
+        <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeMediumLowColor}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="Border.app-card-elevated">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="14,12" />
+        <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeMediumLowColor}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- Typography -->
+    <Style Selector="TextBlock.app-subtitle">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style Selector="TextBlock.app-hint">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        <Setter Property="Opacity" Value="0.92" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style Selector="TextBlock.app-page-title">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="TextBlock.app-section-label">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+    </Style>
+
+    <!-- Toolbar: primary navigation vs secondary actions -->
+    <Style Selector="Button.app-nav">
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="12,6" />
+    </Style>
+
+    <Style Selector="Button.app-action">
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeAccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.app-danger">
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Foreground" Value="{DynamicResource SystemControlErrorTextForegroundBrush}" />
+    </Style>
+
+    <!-- List rows (dashboard) -->
+    <Style Selector="Border.app-list-row">
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeMediumLowColor}" />
+    </Style>
+
+    <!-- Status strip -->
+    <Style Selector="Border.app-status-strip">
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeMediumLowColor}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+    </Style>
+
+    <Style Selector="TextBlock.app-status-text">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+</Styles>

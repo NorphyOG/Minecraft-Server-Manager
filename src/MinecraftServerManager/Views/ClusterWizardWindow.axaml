@@ -1,0 +1,126 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MinecraftServerManager.ViewModels"
+        x:Class="MinecraftServerManager.Views.ClusterWizardWindow"
+        x:DataType="vm:ClusterWizardViewModel"
+        Width="580"
+        MinWidth="520"
+        MinHeight="720"
+        Height="760"
+        Title="Cluster-Wizard — Velocity + Paper">
+
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Bottom"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8"
+                    Margin="0,12,0,0">
+            <Button Content="Abbrechen"
+                    ToolTip.Tip="Wizard schließen ohne Cluster zu erstellen."
+                    Command="{Binding CancelCommand}" />
+            <Button Content="Cluster erstellen"
+                    ToolTip.Tip="Velocity-Proxy und zwei Paper-Server herunterladen, Forwarding konfigurieren und registrieren."
+                    Command="{Binding CreateClusterCommand}" />
+        </StackPanel>
+
+        <ScrollViewer MinHeight="560">
+            <StackPanel MaxWidth="520"
+                        HorizontalAlignment="Left"
+                        Spacing="14">
+
+                <Border Classes="app-card">
+                    <StackPanel Spacing="10">
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="Velocity + zwei Paper-Backends" />
+                        <TextBlock Classes="app-hint"
+                                   Text="Erzeugt einen Proxy (Velocity) und zwei Paper-Server mit gemeinsamem Forwarding-Secret und velocity.toml." />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="app-card">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="app-section-label"
+                                   Text="Allgemein"
+                                   ToolTip.Tip="Anzeigename und Ports für Proxy und Minecraft-Versionen." />
+
+                        <TextBlock Text="Clustername"
+                                   ToolTip.Tip="Name für die Anzeige in der App; beeinflusst auch Ordnernamen der drei Instanzen." />
+                        <TextBox Text="{Binding ClusterDisplayName}"
+                                 ToolTip.Tip="Wird für Proxy- und Backend-Ordner unter dem Server-Stammverzeichnis verwendet." />
+
+                        <TextBlock Text="Proxy-Port (Spieler verbinden hier)"
+                                   ToolTip.Tip="Öffentlicher Port für Spieler; nur dieser sollte aus dem Internet erreichbar sein." />
+                        <NumericUpDown Minimum="1024"
+                                       Maximum="65535"
+                                       Value="{Binding ProxyPort}"
+                                       ToolTip.Tip="Velocity lauscht hier; Backends bleiben typischerweise nur auf localhost erreichbar." />
+
+                        <TextBlock Text="Velocity-Version"
+                                   ToolTip.Tip="Proxy-Software-Version; neuere Builds stehen oben in der Liste." />
+                        <ComboBox ItemsSource="{Binding VelocityVersions}"
+                                  SelectedItem="{Binding SelectedVelocityVersion}"
+                                  ToolTip.Tip="Es wird das aktuelle Velocity-Build für diese Version geladen." />
+
+                        <TextBlock Text="Paper / Minecraft-Version (Backends)"
+                                   ToolTip.Tip="Beide Paper-Server nutzen dieselbe Minecraft-Zielversion." />
+                        <ComboBox ItemsSource="{Binding PaperVersions}"
+                                  SelectedItem="{Binding SelectedMcVersion}"
+                                  ToolTip.Tip="Neueste Minecraft-Versionen zuerst; Paper-Builds werden für Lobby und Spielserver geladen." />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="app-card">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="app-section-label"
+                                   Text="Lobby-Backend"
+                                   ToolTip.Tip="Erster Paper-Server; oft Spawn oder Hub." />
+
+                        <TextBlock Text="Servername / Schlüssel"
+                                   ToolTip.Tip="Kurzer Name; wird in Velocity für Routing verwendet." />
+                        <TextBox Text="{Binding BackendLobbyName}"
+                                 ToolTip.Tip="Ohne Sonderzeichen; wird als Schlüssel in velocity.toml normalisiert." />
+
+                        <TextBlock Text="Port"
+                                   ToolTip.Tip="Spielport dieses Paper-Servers (localhost-seitig vom Proxy aus erreichbar)." />
+                        <NumericUpDown Minimum="1024"
+                                       Maximum="65535"
+                                       Value="{Binding BackendLobbyPort}"
+                                       ToolTip.Tip="Muss eindeutig sein und darf nicht mit Proxy oder zweitem Backend kollidieren." />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="app-card">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="app-section-label"
+                                   Text="Spiel-Backend"
+                                   ToolTip.Tip="Zweiter Paper-Server für eine zweite Welt oder Spielmodus." />
+
+                        <TextBlock Text="Servername / Schlüssel"
+                                   ToolTip.Tip="Zweiter Routing-Schlüssel für Velocity." />
+                        <TextBox Text="{Binding BackendGameName}"
+                                 ToolTip.Tip="Wird zusammen mit Lobby-Schlüssel in velocity.toml registriert." />
+
+                        <TextBlock Text="Port"
+                                   ToolTip.Tip="Spielport des zweiten Backends." />
+                        <NumericUpDown Minimum="1024"
+                                       Maximum="65535"
+                                       Value="{Binding BackendGamePort}"
+                                       ToolTip.Tip="Muss von allen anderen Ports in diesem Wizard abweichen." />
+                    </StackPanel>
+                </Border>
+
+                <ProgressBar Minimum="0"
+                             Maximum="1"
+                             Height="8"
+                             Value="{Binding DownloadProgress}"
+                             ToolTip.Tip="Fortschritt der Jar-Downloads für Velocity und Paper." />
+
+                <TextBlock Text="{Binding StatusText}"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}"
+                           ToolTip.Tip="Status- und Fehlermeldungen beim Erstellen des Clusters." />
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

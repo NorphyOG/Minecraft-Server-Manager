@@ -1,0 +1,11 @@
+{
+  "paper": [
+    { "label": "Spieler benachrichtigen", "command": "say Willkommen auf dem Server" },
+    { "label": "Welt speichern", "command": "save-all" },
+    { "label": "Whitelist hinzufügen (Name)", "command": "whitelist add Spielername" },
+    { "label": "Reload Konfiguration", "command": "reload confirm" }
+  ],
+  "velocity": [
+    { "label": "Proxy Info", "command": "velocity version" }
+  ]
+}

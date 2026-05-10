@@ -1,0 +1,124 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MinecraftServerManager.ViewModels"
+        x:Class="MinecraftServerManager.Views.QuickSetupWindow"
+        x:DataType="vm:QuickSetupViewModel"
+        Width="540"
+        MinWidth="480"
+        MinHeight="680"
+        Height="720"
+        Title="Quick-Setup — Paper Server">
+
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Bottom"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8"
+                    Margin="0,12,0,0">
+            <Button Content="Abbrechen"
+                    ToolTip.Tip="Dialog schließen ohne Änderungen."
+                    Command="{Binding CancelCommand}" />
+            <Button Content="Anlegen &amp; herunterladen"
+                    IsEnabled="{Binding IsCreateEnabled}"
+                    ToolTip.Tip="Paper-Server herunterladen und Instanz anlegen. Erfordert akzeptierte Minecraft EULA."
+                    Command="{Binding CreateCommand}" />
+        </StackPanel>
+
+        <ScrollViewer MinHeight="520">
+            <StackPanel MaxWidth="520"
+                        HorizontalAlignment="Left"
+                        Spacing="14">
+
+                <Border Classes="app-card">
+                    <StackPanel Spacing="10">
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="Neuen Paper-Server anlegen" />
+                        <TextBlock Classes="app-hint"
+                                   Text="Mit dem Download stimmen Sie den Nutzungsbedingungen von PaperMC und der Minecraft EULA zu." />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="app-card">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="app-section-label"
+                                   Text="Grunddaten"
+                                   ToolTip.Tip="Name, Version und Spielport für die neue Instanz." />
+
+                        <TextBlock Text="Anzeigename"
+                                   ToolTip.Tip="Name der Instanz in der Liste und als Ordnername (ungültige Zeichen werden ersetzt)." />
+                        <TextBox Text="{Binding ServerName}"
+                                 ToolTip.Tip="Frei wählbarer Name; bestimmt auch den Unterordner unter dem Server-Stammverzeichnis." />
+
+                        <TextBlock Text="Minecraft-Version"
+                                   ToolTip.Tip="Paper wird für diese Minecraft-Version geladen; die Liste zeigt aktuelle Versionen oben." />
+                        <ComboBox ItemsSource="{Binding PaperVersions}"
+                                  SelectedItem="{Binding MinecraftVersion}"
+                                  ToolTip.Tip="Neueste stabile Versionen erscheinen zuerst. Es wird der aktuelle Paper-Build für diese Version heruntergeladen." />
+
+                        <TextBlock Text="Port"
+                                   ToolTip.Tip="UDP/TCP-Spielport (Standard 25565). Muss frei sein und darf nicht mit anderen Instanzen kollidieren." />
+                        <NumericUpDown Minimum="1024"
+                                       Maximum="65535"
+                                       Value="{Binding ServerPort}"
+                                       ToolTip.Tip="Port in server.properties (server-port). Firewall ggf. manuell öffnen." />
+
+                        <TextBlock Text="Weltname (level-name)"
+                                   ToolTip.Tip="Name des Weltordners; entspricht level-name in server.properties." />
+                        <TextBox Text="{Binding LevelName}"
+                                 ToolTip.Tip="Standard „world“. Ändern, wenn mehrere Welten oder bestehende Saves verwendet werden." />
+
+                        <TextBlock Text="JVM-Argumente (optional)"
+                                   ToolTip.Tip="Speicher (-Xmx), GC und Optimierungen; überschreibt für diese Instanz die globalen Standard-JVM-Argumente, wenn ausgefüllt." />
+                        <TextBox AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MinHeight="48"
+                                 Text="{Binding JvmArgs}"
+                                 ToolTip.Tip="Leer lassen, um die globalen JVM-Standardeinstellungen zu übernehmen." />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="app-card">
+                    <StackPanel Spacing="10">
+                        <CheckBox Content="Minecraft EULA akzeptiert (https://aka.ms/MinecraftEULA)"
+                                  IsChecked="{Binding EulaAccepted}"
+                                  ToolTip.Tip="Pflicht für den Betrieb eines Minecraft-Servers. Ohne Bestätigung kann der Server nicht gestartet werden." />
+
+                        <Separator Margin="0,4" />
+
+                        <TextBlock Classes="app-section-label"
+                                   Text="RCON"
+                                   ToolTip.Tip="Remote-Konsole für Befehle ohne GUI-Konsole (optional)." />
+
+                        <CheckBox Content="RCON aktivieren"
+                                  IsChecked="{Binding EnableRcon}"
+                                  ToolTip.Tip="Schreibt RCON-Einstellungen in server.properties und ermöglicht Fernbefehle auf dem konfigurierten Port." />
+
+                        <TextBlock Text="RCON-Port"
+                                   ToolTip.Tip="TCP-Port für RCON; darf nicht mit dem Spielport oder anderen Diensten kollidieren." />
+                        <NumericUpDown Minimum="1024"
+                                       Maximum="65535"
+                                       Value="{Binding RconPort}"
+                                       ToolTip.Tip="Typisch nahe am Spielport (z. B. 25575). In Firewall nur bei Bedarf öffnen." />
+
+                        <TextBlock Text="RCON-Passwort"
+                                   ToolTip.Tip="Passwort für RCON-Clients; sollte stark geheim bleiben (nur localhost verwenden)." />
+                        <TextBox Text="{Binding RconPassword}"
+                                 ToolTip.Tip="Wird in server.properties gespeichert. Für Produktion ein sicheres Passwort wählen." />
+                    </StackPanel>
+                </Border>
+
+                <ProgressBar Minimum="0"
+                             Maximum="1"
+                             Height="8"
+                             Value="{Binding DownloadProgress}"
+                             ToolTip.Tip="Fortschritt des Paper-JAR-Downloads." />
+
+                <TextBlock Text="{Binding StatusText}"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}"
+                           ToolTip.Tip="Status- und Fehlermeldungen zum Anlegen und Download." />
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>
